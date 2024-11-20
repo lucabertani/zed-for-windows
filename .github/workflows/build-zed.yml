@@ -5,6 +5,10 @@ on:
     tags:
       - "daily-release-[0-9]+"
 
+permissions:
+  pull-requests: read
+  statuses: write
+
 env:
   CARGO_TERM_COLOR: always
 
