@@ -38,6 +38,7 @@ jobs:
           name: zed
           path: ./zed/target/release/zed.exe
           overwrite: true
+
   Upload:
     needs: Build
     runs-on: ubuntu-latest
