@@ -31,10 +31,41 @@ jobs:
           cd zed
           cargo build --release
 
-      - name: Upload binaries to release
-        uses: svenstaro/upload-release-action@v2
+      - name: Upload Setup Wizard
+        uses: actions/upload-artifact@v4
         with:
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: ./zed/target/release/zed.exe
-          tag: ${{ github.ref_name }}
+          name: zed
+          path: ./zed/target/release/zed.exe
           overwrite: true
+  upload:
+    needs: Build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@main
+
+      - name: Download Release Folder
+        uses: actions/download-artifact@v4
+        with:
+          name: setup
+          path: Output
+
+      - name: Setup Git Environment
+        run: |
+          git config --global user.email 41898111+github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-actions[bot]
+
+      - name: Generate Release Tag
+        id: tag
+        run: |
+          echo "::set-output name=release_tag::$(date +"%Y.%m.%d")"
+          echo "::set-output name=release_date::$(date +"%Y.%m.%d")"     
+          
+      - name: Upload to Releases
+        uses: softprops/action-gh-release@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          name: ${{ steps.tag.outputs.release_date }} Zed Windows
+          tag_name: ${{ steps.tag.outputs.release_tag }}
+          files: ./zed/target/release/zed.exe
