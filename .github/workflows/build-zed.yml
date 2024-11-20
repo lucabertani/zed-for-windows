@@ -8,6 +8,7 @@ on:
 permissions:
   pull-requests: read
   statuses: write
+  contents: write
 
 env:
   CARGO_TERM_COLOR: always
@@ -47,7 +48,7 @@ jobs:
       - name: Download Release Folder
         uses: actions/download-artifact@v4
         with:
-          name: setup
+          name: zed
           path: Output
 
       - name: Setup Git Environment
@@ -68,4 +69,4 @@ jobs:
         with:
           name: ${{ steps.tag.outputs.release_date }} Zed Windows
           tag_name: ${{ steps.tag.outputs.release_tag }}
-          files: ./zed/target/release/zed.exe
+          files: ./Output/zed.exe
