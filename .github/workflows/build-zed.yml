@@ -1,0 +1,33 @@
+name: Windows build for Zed
+
+on:
+  push:
+    tags:
+      - "daily-release-[0-9]+"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  zed:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v4
+
+      - name: Clone zed
+        run: git clone https://github.com/zed-industries/zed.git
+
+      - name: Build Zed
+        run: |
+          cd zed
+          cargo build --release
+
+      - name: Upload binaries to release
+        uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: ./zed/target/release/zed.exe
+          tag: ${{ github.ref_name }}
+          overwrite: true
