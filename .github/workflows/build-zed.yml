@@ -31,12 +31,18 @@ jobs:
         run: |
           cd zed
           cargo build --release
+      
+      - name: Zip file
+        run: |
+          cd zed/target/release/
+          zip zed zed.exe
 
       - name: Upload Setup Wizard
         uses: actions/upload-artifact@v4
         with:
           name: zed
-          path: ./zed/target/release/zed.exe
+          # path: ./zed/target/release/zed.exe
+          path: ./zed/target/release/zed.zip
           overwrite: true
 
   Upload:
@@ -70,4 +76,4 @@ jobs:
         with:
           name: ${{ steps.tag.outputs.release_date }} Zed Windows
           tag_name: ${{ steps.tag.outputs.release_tag }}
-          files: ./Output/zed.exe
+          files: ./Output/zed.zip
