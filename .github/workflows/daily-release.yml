@@ -28,7 +28,7 @@ jobs:
           git config --global user.name github-actions[bot]
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git tag -a daily-release-${{ steps.date.outputs.date }} -m "${{ steps.date.outputs.date }}"
+          git tag -a daily-release-${{ steps.date.outputs.date }} -m "daily-release-${{ steps.date.outputs.date }}"
           git push origin daily-release-${{ steps.date.outputs.date }}
       # - name: Release
       #   uses: softprops/action-gh-release@v2
