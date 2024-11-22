@@ -6,3 +6,5 @@ To manually initiate a build, please execute the following commands
 
     git tag -a daily-release-1 -m "daily-release-1"
     git push origin daily-release-1
+
+[Link to github Zed project](https://github.com/zed-industries/zed)
