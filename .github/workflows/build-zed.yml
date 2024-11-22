@@ -4,6 +4,10 @@ on:
   push:
     tags:
       - "daily-release-[0-9]+"
+  workflow_run:
+    workflows: ["Daily release"]
+    types:
+      - completed
 
 permissions:
   pull-requests: read
