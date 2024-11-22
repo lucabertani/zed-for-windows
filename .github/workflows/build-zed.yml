@@ -39,7 +39,10 @@ jobs:
       - name: Zip file
         run: |
           cd zed/target/release/
-          zip zed zed.exe
+          Compress-Archive zed.exe zed.zip
+        # Compress-Archive -Path folder/* -Destination new.zip
+        # zip zed zed.exe
+
 
       - name: Upload Setup Wizard
         uses: actions/upload-artifact@v4
