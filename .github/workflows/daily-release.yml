@@ -3,6 +3,7 @@ on:
   schedule:
     - cron: "0 3 * * *" # execute every day at 03:00 UTC
     # - cron: "0 3 * * 1" # execute monday at 03:00 UTC
+  workflow_dispatch:
 
 permissions:
   pull-requests: read
@@ -20,9 +21,17 @@ jobs:
           echo "date=$(/bin/date -u "+%Y%m%d%H%M%S")" >> $GITHUB_OUTPUT
         shell: bash
 
-      - name: Release
-        uses: softprops/action-gh-release@v2
-        with:
-          name: ${{ steps.date.outputs.date }}
-          tag_name: daily-release-${{ steps.date.outputs.date }}
-          token: ${{ secrets.RELEASE_TOKEN }}
+      - name: Push Tag
+        run: |
+          git config --global user.email 41898111+github-actions[bot]@users.noreply.github.com
+          git config --global user.name github-actions[bot]
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a daily-release-${{ steps.date.outputs.date }} -m "${{ steps.date.outputs.date }}"
+          git push origin daily-release-${{ steps.date.outputs.date }}
+      # - name: Release
+      #   uses: softprops/action-gh-release@v2
+      #   with:
+      #     name: ${{ steps.date.outputs.date }}
+      #     tag_name: daily-release-${{ steps.date.outputs.date }}
+      #     token: ${{ secrets.RELEASE_TOKEN }}
