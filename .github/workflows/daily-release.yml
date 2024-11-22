@@ -30,9 +30,3 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git tag -a daily-release-${{ steps.date.outputs.date }} -m "daily-release-${{ steps.date.outputs.date }}"
           git push origin daily-release-${{ steps.date.outputs.date }}
-      # - name: Release
-      #   uses: softprops/action-gh-release@v2
-      #   with:
-      #     name: ${{ steps.date.outputs.date }}
-      #     tag_name: daily-release-${{ steps.date.outputs.date }}
-      #     token: ${{ secrets.RELEASE_TOKEN }}
