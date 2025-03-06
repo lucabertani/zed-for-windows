@@ -2,3 +2,4 @@
 rustflags = []
 [profile.release]
 debug = false
+lto = true
