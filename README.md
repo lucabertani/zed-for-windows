@@ -10,3 +10,6 @@ To manually initiate a build, please execute the following commands
 Or manually execute GitHub Action **Daily release**
 
 [Link to github Zed project](https://github.com/zed-industries/zed)
+
+Zed has been officially released for Windows, so the daily build has been disabled.
+[Zed Windows release] (https://zed.dev/windows)
