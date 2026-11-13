@@ -1,9 +1,15 @@
-name: Patched Zed stable for Windows
+name: Patched Zed stable for Windows (standalone)
 
 on:
   schedule:
     - cron: "0 3 * * *"
   workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild even if this patched stable version is already published
+        type: boolean
+        required: false
+        default: false
 
 permissions:
   contents: read
@@ -25,6 +31,8 @@ jobs:
       - name: Resolve stable source and check existing release
         id: release
         uses: actions/github-script@v7
+        env:
+          FORCE_BUILD: ${{ inputs.force || false }}
         with:
           script: |
             const upstream = { owner: 'zed-industries', repo: 'zed' };
@@ -35,9 +43,8 @@ jobs:
             const { data: commit } = await github.rest.repos.getCommit({
               ...upstream, ref: release.tag_name,
             });
-            // A distinct tag prevents an older wrap-only release from skipping
-            // the first build that also permanently disables upstream updates.
-            const tag = `${release.tag_name}-wrap-100000-no-updates`;
+            // Do not mistake an older installer ZIP for this standalone app.
+            const tag = `${release.tag_name}-wrap-100000-no-updates-standalone`;
             let published = false;
             try {
               const { data: existing } = await github.rest.repos.getReleaseByTag({
@@ -51,14 +58,16 @@ jobs:
                 throw error;
               }
             }
+            const force = context.eventName === 'workflow_dispatch' && process.env.FORCE_BUILD === 'true';
+            const shouldBuild = !published || force;
             core.setOutput('upstream_tag', release.tag_name);
             core.setOutput('upstream_sha', commit.sha);
             core.setOutput('release_tag', tag);
-            core.setOutput('build', !published || context.eventName === 'workflow_dispatch');
-            core.info(`Stable: ${release.tag_name} (${commit.sha}); already published: ${published}`);
+            core.setOutput('build', shouldBuild);
+            core.info(`Stable: ${release.tag_name} (${commit.sha}); already published: ${published}; force: ${force}; build: ${shouldBuild}`);
 
   build:
-    name: Build and release Windows x64
+    name: Build and release standalone Windows x64
     needs: stable
     if: needs.stable.outputs.build == 'true'
     runs-on: windows-2022
@@ -90,8 +99,10 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Test patch safeguards (no compilation)
-        run: ./tests/Test-Patch-Zed.ps1
+      - name: Test patch and standalone packaging safeguards (no compilation)
+        run: |
+          ./tests/Test-Patch-Zed.ps1
+          ./tests/Test-Package-Zed.ps1
 
       - name: Checkout immutable stable source
         uses: actions/checkout@v4
@@ -123,33 +134,32 @@ jobs:
           shared-key: windows-2022-x86_64-msvc-official-bundle-wrap100000-v1
           # Include bundle-specific optimizations in addition to the action's
           # automatic compiler, Cargo.lock and manifest/config hashes.
-          key: ${{ hashFiles('zed/.cargo/bundle-config.toml', 'Patch-Zed.ps1', 'Build-Zed.ps1') }}
+          key: ${{ hashFiles('zed/.cargo/bundle-config.toml', 'Patch-Zed.ps1', 'Build-Zed.ps1', 'Package-Zed.ps1') }}
           cache-all-crates: "true"
           cache-workspace-crates: "true"
           cache-on-failure: "true"
 
-      - name: Build using upstream Windows release bundler
+      - name: Build application with official Windows release settings (no installer)
         run: ./Build-Zed.ps1 -SourcePath ./zed
 
-      - name: Zip Windows executable
+      - name: Collect standalone application and runtime files
+        run: ./Package-Zed.ps1 -SourcePath ./zed -DestinationPath ./dist/zed
+
+      - name: Zip standalone application (not the installer)
         id: archive
         run: |
           $ErrorActionPreference = 'Stop'
-          $installer = './zed/target/Zed-x86_64.exe'
-          if (-not (Test-Path -LiteralPath $installer -PathType Leaf)) {
-            throw "Upstream bundler did not produce $installer"
-          }
-          New-Item -ItemType Directory -Path dist -Force | Out-Null
           $archive = "zed-windows-x86_64-$env:RELEASE_TAG.zip"
-          Compress-Archive -LiteralPath $installer -DestinationPath "dist/$archive" -CompressionLevel Optimal
+          Compress-Archive -Path ./dist/zed/* -DestinationPath "dist/$archive" -CompressionLevel Optimal
           "name=$archive" >> $env:GITHUB_OUTPUT
           @"
           Unofficial Windows x64 build of Zed stable [$env:UPSTREAM_TAG](https://github.com/zed-industries/zed/releases/tag/$env:UPSTREAM_TAG).
 
           - Upstream source commit: $env:UPSTREAM_SHA
           - With ``soft_wrap: none``, the fallback wrap threshold is 100,000 columns (not an infinite line).
-          - Built with the stable source's Rust toolchain, Cargo configuration and official Windows bundling script.
-          - Download and extract **$archive**, then run **Zed-x86_64.exe** (the Windows installer).
+          - Built with the stable source's Rust toolchain, official Windows Cargo configuration and release optimizations, without building an installer.
+          - Extract the **entire $archive** to a folder, then double-click **zed.exe** in that folder to launch Zed directly. Keep its DLLs and subfolders alongside it.
+          - This ZIP contains the standalone application, not a setup wizard. It does not install Explorer integration or create shortcuts; settings still use Zed's normal Windows profile directories.
           - This unofficial build is **not code signed** by Zed Industries.
           - Automatic updates, manual update checks and Windows pending-update finalization are disabled in the source to preserve these patches, even with ``"auto_update": true``. Get new patched versions from this repository's Releases.
           "@ | Set-Content -LiteralPath dist/release-notes.md -Encoding utf8
@@ -181,7 +191,7 @@ jobs:
               throw ($existing -join "`n")
             }
             gh release create $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY `
-              --target $env:GITHUB_SHA --title "Zed $env:UPSTREAM_TAG - Windows x64 (wrap 100000, no updates)" `
+              --target $env:GITHUB_SHA --title "Zed $env:UPSTREAM_TAG - Windows x64 standalone (wrap 100000, no updates)" `
               --notes-file dist/release-notes.md --draft
           }
           gh release upload $env:RELEASE_TAG "dist/$env:ARCHIVE_NAME" `
