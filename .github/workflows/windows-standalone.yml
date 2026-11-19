@@ -157,6 +157,7 @@ jobs:
           Unofficial Windows x64 build of Zed stable [$env:UPSTREAM_TAG](https://github.com/zed-industries/zed/releases/tag/$env:UPSTREAM_TAG).
 
           - Upstream source commit: $env:UPSTREAM_SHA
+          - Build scripts commit: $env:GITHUB_SHA
           - With ``soft_wrap: none``, the fallback wrap threshold is 100,000 columns (not an infinite line).
           - Built with the stable source's Rust toolchain, official Windows Cargo configuration and release optimizations, without building an installer.
           - Extract the **entire $archive** to a folder, then double-click **zed.exe** in that folder to launch Zed directly. Keep its DLLs and subfolders alongside it.
@@ -191,8 +192,9 @@ jobs:
             if (($existing -join "`n") -notmatch 'HTTP 404') {
               throw ($existing -join "`n")
             }
+            # Use the default branch tip: targeting an older workflow SHA can require workflows:write.
             gh release create $env:RELEASE_TAG --repo $env:GITHUB_REPOSITORY `
-              --target $env:GITHUB_SHA --title "Zed $env:UPSTREAM_TAG - Windows x64 standalone (wrap 100000, no updates)" `
+              --title "Zed $env:UPSTREAM_TAG - Windows x64 standalone (wrap 100000, no updates)" `
               --notes-file dist/release-notes.md --draft
           }
           gh release upload $env:RELEASE_TAG "dist/$env:ARCHIVE_NAME" `
